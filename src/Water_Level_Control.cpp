@@ -153,12 +153,6 @@ void setup() {
     Serial.begin(9600);
     pinMode(TRIG_PIN, OUTPUT);
     pinMode(ECHO_PIN, INPUT);
-    // pinMode(BUZZER_OUT, OUTPUT);
-    pinMode(LED_OUT, OUTPUT);
-    pinMode(LED_MIN, OUTPUT);
-    pinMode(LED_AVG, OUTPUT);
-    pinMode(LED_MAX, OUTPUT);
-    pinMode(CAL_PB, INPUT_PULLUP);
 
     if ((!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) && (USE_DISPLAY)) { // Address 0x3C for 128x64
         Serial.println(F("SSD1306 allocation failed"));
@@ -166,7 +160,13 @@ void setup() {
         
     }
     display.clearDisplay();
-    display.setTextSize(1);             // Normal 1:1 pixel scale
+    display.setTe    // pinMode(BUZZER_OUT, OUTPUT);
+    pinMode(LED_OUT, OUTPUT);
+    pinMode(LED_MIN, OUTPUT);
+    pinMode(LED_AVG, OUTPUT);
+    pinMode(LED_MAX, OUTPUT);
+    pinMode(CAL_PB, INPUT_PULLUP);
+xtSize(1);             // Normal 1:1 pixel scale
     display.setTextColor(SSD1306_WHITE);        // Draw white text
 }
 
