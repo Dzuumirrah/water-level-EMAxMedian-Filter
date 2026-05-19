@@ -99,6 +99,24 @@ Run the GUI on a computer connected to the same Wi-Fi network:
 python tools/water_level_udp_gui.py
 ```
 
+Or run the local web dashboard:
+
+```bash
+python tools/water_level_udp_web.py
+```
+
+Then open:
+
+```text
+http://localhost:8000
+```
+
+To open it from another device on the same Wi-Fi, use the computer IP printed by the script, for example:
+
+```text
+http://192.168.1.20:8000
+```
+
 The UDP payload format is:
 
 ```json
