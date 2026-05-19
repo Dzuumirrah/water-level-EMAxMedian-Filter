@@ -2,6 +2,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Wire.h>
+#include <WiFi.h>
+#include <WiFiUdp.h>
 
 const int SCREEN_WIDTH = 128; // OLED display width, in pixels
 const int SCREEN_HEIGHT = 64; // OLED display height, in pixels
@@ -19,7 +21,17 @@ const int CAL_PB = 4;
 const bool USE_DISPLAY = true;        // Display on/off (true = display on, false = display off)
 bool motorActivated = false;           // Status motor (true = on, false = off)
 
-float tankZero = tankZero;
+const char* WIFI_SSID = "pudding coklat";
+const char* WIFI_PASSWORD = "12233445";
+const char* UDP_TARGET_IP = "255.255.255.255";
+const uint16_t UDP_TARGET_PORT = 4210;
+const unsigned long UDP_SEND_INTERVAL = 500;
+
+WiFiUDP udp;
+bool udpEnabled = false;
+unsigned long lastUdpSend = 0;
+
+float tankZero = 30.0;
 const int tankFull = 3;
 
 float MIN_RANGE = 0.8*tankZero;                     // 20% tanki penuh
@@ -33,6 +45,8 @@ const int DELAY_TIME = 1500;         // in ms
 // Initiate declarator
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 float getDistance();
+void setupWifiUdp();
+void sendUdpTelemetry(int waterLevel);
 bool buttonPressed = false;
 
 // Display function
@@ -153,6 +167,7 @@ void setup() {
     Serial.begin(9600);
     pinMode(TRIG_PIN, OUTPUT);
     pinMode(ECHO_PIN, INPUT);
+    setupWifiUdp();
 
     if ((!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) && (USE_DISPLAY)) { // Address 0x3C for 128x64
         Serial.println(F("SSD1306 allocation failed"));
@@ -160,14 +175,15 @@ void setup() {
         
     }
     display.clearDisplay();
-    display.setTe    // pinMode(BUZZER_OUT, OUTPUT);
+    display.setTextSize(1);             // Normal 1:1 pixel scale
+    display.setTextColor(SSD1306_WHITE);        // Draw white text
+
+    // pinMode(BUZZER_OUT, OUTPUT);
     pinMode(LED_OUT, OUTPUT);
     pinMode(LED_MIN, OUTPUT);
     pinMode(LED_AVG, OUTPUT);
     pinMode(LED_MAX, OUTPUT);
     pinMode(CAL_PB, INPUT_PULLUP);
-xtSize(1);             // Normal 1:1 pixel scale
-    display.setTextColor(SSD1306_WHITE);        // Draw white text
 }
 
 bool displayCalibrating = false; // Flag to indicate calibration message should be displayed
@@ -235,6 +251,11 @@ void loop(){
         Serial.println("");
         DELAY_PRINT = millis();
     }
+
+    if (millis() - lastUdpSend >= UDP_SEND_INTERVAL) {
+        sendUdpTelemetry(waterLevel);
+        lastUdpSend = millis();
+    }
     
     if (USE_DISPLAY) {
         displayWaterLevel(waterLevel, motorActivated);
@@ -261,3 +282,55 @@ float getDistance() {
     DISTANCE = DURATION * SOUND_SPEED/2;
     return DISTANCE; 
     }
+
+void setupWifiUdp() {
+    if (strcmp(WIFI_SSID, "YOUR_WIFI_SSID") == 0 || strlen(WIFI_SSID) == 0) {
+        Serial.println("UDP disabled: set WIFI_SSID and WIFI_PASSWORD first.");
+        return;
+    }
+
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    Serial.print("Connecting to WiFi");
+
+    unsigned long startTime = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - startTime < 15000) {
+        delay(500);
+        Serial.print(".");
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+        udpEnabled = true;
+        Serial.println();
+        Serial.print("WiFi connected. ESP32 IP: ");
+        Serial.println(WiFi.localIP());
+        Serial.print("Sending UDP telemetry to ");
+        Serial.print(UDP_TARGET_IP);
+        Serial.print(":");
+        Serial.println(UDP_TARGET_PORT);
+    } else {
+        Serial.println();
+        Serial.println("WiFi connection failed. UDP telemetry disabled.");
+    }
+}
+
+void sendUdpTelemetry(int waterLevel) {
+    if (!udpEnabled || WiFi.status() != WL_CONNECTED) {
+        return;
+    }
+
+    char payload[160];
+    snprintf(
+        payload,
+        sizeof(payload),
+        "{\"waterLevel\":%d,\"distanceCm\":%.2f,\"motor\":%s,\"ip\":\"%s\"}",
+        waterLevel,
+        DISTANCE_READ,
+        motorActivated ? "true" : "false",
+        WiFi.localIP().toString().c_str()
+    );
+
+    udp.beginPacket(UDP_TARGET_IP, UDP_TARGET_PORT);
+    udp.write(reinterpret_cast<const uint8_t*>(payload), strlen(payload));
+    udp.endPacket();
+}

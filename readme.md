@@ -8,6 +8,7 @@ A simple ESP32-based water level monitoring project using an ultrasonic sensor a
 - Calculates and displays water level percentage on an SSD1306 OLED
 - Uses LED indicators for low, medium, and high water level states
 - Serial output for debugging and monitoring
+- Sends water level telemetry over UDP for the Python GUI
 - Adjustable distances and thresholds in code
 
 ## Hardware Components
@@ -82,6 +83,28 @@ pio run -t upload
 pio device monitor --baud 9600
 ```
 
+## UDP Python GUI
+
+The ESP32 can broadcast water level telemetry as JSON over UDP port `4210`.
+Before uploading, edit these values in `src/Water_Level_Control.cpp`:
+
+```cpp
+const char* WIFI_SSID = "YOUR_WIFI_SSID";
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+```
+
+Run the GUI on a computer connected to the same Wi-Fi network:
+
+```bash
+python tools/water_level_udp_gui.py
+```
+
+The UDP payload format is:
+
+```json
+{"waterLevel":50,"distanceCm":12.34,"motor":false,"ip":"192.168.1.10"}
+```
+
 ## Notes
 
 - The OLED display is enabled by default in the code via `USE_DISPLAY = true`.
@@ -94,3 +117,6 @@ pio device monitor --baud 9600
 - Save measured values to external storage or send them over Wi-Fi.
 - Add calibration support for different tank heights and sensor positions.
 - Use a dedicated water level sensor for more stable readings.
+
+## Reference
+Karacaa, H. (n.d.). WaterLevelProject [Computer software]. GitHub. Retrieved May 19, 2026, from https://github.com/hamzakaracaa/WaterLevelProject
