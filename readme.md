@@ -117,6 +117,12 @@ To open it from another device on the same Wi-Fi, use the computer IP printed by
 http://192.168.1.20:8000
 ```
 
+The ESP32 firmware also hosts its own dashboard after Wi-Fi connects. Upload the firmware, open the serial monitor, then visit the IP printed after `Open dashboard:`.
+
+```text
+http://ESP32_IP_ADDRESS
+```
+
 The UDP payload format is:
 
 ```json
